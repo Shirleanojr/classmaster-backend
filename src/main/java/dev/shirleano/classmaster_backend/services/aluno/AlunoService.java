@@ -2,6 +2,7 @@ package dev.shirleano.classmaster_backend.services.aluno;
 
 import dev.shirleano.classmaster_backend.domain.aluno.Aluno;
 import dev.shirleano.classmaster_backend.dto.aluno.*;
+import dev.shirleano.classmaster_backend.exceptions.AlunoNotFoundException;
 import dev.shirleano.classmaster_backend.repository.AlunoRepository;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
@@ -33,8 +34,12 @@ public class AlunoService {
     }
 
     public DetalhamentoAlunoDto detalharDadosAluno(Long id) {
-        Aluno aluno = repository.getReferenceById(id);
-        return new DetalhamentoAlunoDto(aluno);
+        try {
+            Aluno aluno = repository.getReferenceById(id);
+            return new DetalhamentoAlunoDto(aluno);
+        }catch (Exception ex){
+            throw new AlunoNotFoundException(ex.getMessage());
+        }
     }
 
     public AlunoPageDTO listarTodosAlunos(@PositiveOrZero int page, @Positive @Max(10) int size){
@@ -44,15 +49,24 @@ public class AlunoService {
     }
 
     public AlunoPageDTO listarAlunosPeloNome(String nome, @PositiveOrZero int page, @Positive @Max(10) int size) {
-        Page<Aluno> pageAluno = repository.findByNomeIgnoreCaseContaining(nome, PageRequest.of(page, size, Sort.by("nome").ascending()));
-        List<AlunoBaseDTO> alunos = pageAluno.get().map(AlunoBaseDTO::new).collect(Collectors.toList());
-        return new AlunoPageDTO(alunos, pageAluno);
+        try {
+            Page<Aluno> pageAluno = repository.findByNomeIgnoreCaseContaining(nome, PageRequest.of(page, size, Sort.by("nome").ascending()));
+            List<AlunoBaseDTO> alunos = pageAluno.get().map(AlunoBaseDTO::new).collect(Collectors.toList());
+            return new AlunoPageDTO(alunos, pageAluno);
+        } catch (Exception ex) {
+            throw new AlunoNotFoundException(ex.getMessage());
+        }
+
     }
 
     public AlunoPageDTO listarAlunosPorMatricula(Long mastricula, @PositiveOrZero int page, @Positive @Max(10) int size) {
-        Page<Aluno> pageAluno = repository.findById(mastricula, PageRequest.of(page, size, Sort.by("nome").ascending()));
-        List<AlunoBaseDTO> alunos = pageAluno.get().map(AlunoBaseDTO::new).collect(Collectors.toList());
-        return new AlunoPageDTO(alunos, pageAluno);
+        try {
+            Page<Aluno> pageAluno = repository.findById(mastricula, PageRequest.of(page, size, Sort.by("nome").ascending()));
+            List<AlunoBaseDTO> alunos = pageAluno.get().map(AlunoBaseDTO::new).collect(Collectors.toList());
+            return new AlunoPageDTO(alunos, pageAluno);
+        } catch(Exception ex) {
+            throw new AlunoNotFoundException(ex.getMessage());
+        }
     }
 
 

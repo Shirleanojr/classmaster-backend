@@ -4,17 +4,20 @@ import dev.shirleano.classmaster_backend.domain.aluno.Aluno;
 import dev.shirleano.classmaster_backend.domain.endereco.Endereco;
 import dev.shirleano.classmaster_backend.dto.aluno.AlunoDto;
 import dev.shirleano.classmaster_backend.dto.aluno.EnderecoDto;
+import dev.shirleano.classmaster_backend.exceptions.AlunoNotFoundException;
 import dev.shirleano.classmaster_backend.repository.AlunoRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.Page;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -45,9 +48,8 @@ class AlunoServiceTest {
     @Captor
     private ArgumentCaptor<Aluno> alunoCaptor;
 
-    @Test
-    @DisplayName("Deve realizar o cadastro do aluno com sucesso")
-    void cadastrarAluno() {
+    @BeforeEach
+    void setUp() {
         this.enderecoDto = new EnderecoDto(
                 "88000-000",
                 "Rua sem nome",
@@ -70,6 +72,11 @@ class AlunoServiceTest {
                 enderecoDto,
                 "",
                 "");
+    }
+
+    @Test
+    @DisplayName("Deve realizar o cadastro do aluno com sucesso")
+    void cadastrarAluno() {
 
         given(enderecoService.criarEndereco(enderecoDto)).willReturn(endereco);
         given(aluno.getId()).willReturn(10L);
@@ -84,15 +91,29 @@ class AlunoServiceTest {
     }
 
     @Test
-    void detalharDadosAluno() {
+    @DisplayName("Deveria não lançar a exceção e encontrar o aluno ")
+    void detalharDadosAlunoSucesso() {
+        given(alunoRepository.getReferenceById(1L)).willReturn(aluno);
+        given(aluno.getDataNascimento()).willReturn(LocalDate.now());
+        given(aluno.getDataCriacao()).willReturn(LocalDateTime.now());
+        assertDoesNotThrow(() -> alunoService.detalharDadosAluno(1L));
+    }
+
+    @Test
+    @DisplayName("Deveria  lançar a exceção ao não encontrar o aluno ")
+    void detalharDadosAlunoFalha() {
+        given(alunoRepository.getReferenceById(1L)).willReturn(null);
+        assertThrows(AlunoNotFoundException.class, () -> alunoService.detalharDadosAluno(1L));
     }
 
     @Test
     void listarTodosAlunos() {
     }
 
+
     @Test
-    void listarAlunosPeloNome() {
+    void listarAlunosPeloNomeSucesso() {
+
     }
 
     @Test
