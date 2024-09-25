@@ -18,7 +18,6 @@ public record DetalhamentoAlunoDto(
         Endereco endereco,
         String instagram,
         String facebook,
-        String matricula,
         String dataMatricula
 ) {
     public DetalhamentoAlunoDto(Aluno aluno) {
@@ -33,7 +32,6 @@ public record DetalhamentoAlunoDto(
                 aluno.getEndereco(),
                 (aluno.getInstagram() == null) ? "" : aluno.getInstagram(),
                 (aluno.getFacebook() == null) ? "" : aluno.getFacebook(),
-                aluno.getId().toString(),
                 aluno.getDataCriacao().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
     }
 }
