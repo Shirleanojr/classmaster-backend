@@ -71,9 +71,13 @@ public class AlunoService {
 
 
     public DetalhamentoAlunoDto atualizarDadosAluno(AtualizacaoAlunoDTO dados) {
-        Aluno aluno = repository.getReferenceById(dados.id());
-        aluno.atualizarDadosAluno(dados);
-        repository.save(aluno);
-        return new DetalhamentoAlunoDto(aluno);
+        try {
+            Aluno aluno = repository.getReferenceById(dados.id());
+            aluno.atualizarDadosAluno(dados);
+            repository.save(aluno);
+            return new DetalhamentoAlunoDto(aluno);
+        } catch (Exception ex) {
+            throw new AlunoNotFoundException(ex.getMessage());
+        }
     }
 }

@@ -49,7 +49,7 @@ public class TokenService {
                     .verify(token)
                     .getSubject();
         } catch (JWTVerificationException exception) {
-            throw new InvalidOrExpiredTokenException();
+            throw new InvalidOrExpiredTokenException(exception.getMessage());
         }
     }
 }
