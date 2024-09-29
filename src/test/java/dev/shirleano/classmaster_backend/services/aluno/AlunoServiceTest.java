@@ -9,19 +9,17 @@ import dev.shirleano.classmaster_backend.exceptions.AlunoNotFoundException;
 import dev.shirleano.classmaster_backend.repository.AlunoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import org.springframework.data.domain.*;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,8 +38,6 @@ class AlunoServiceTest {
     private AlunoDto alunoDto;
     private EnderecoDto enderecoDto;
     private AtualizacaoAlunoDTO atualizacaoAlunoDTO;
-
-    @Mock
     private Aluno aluno;
 
     @Mock
@@ -49,6 +45,9 @@ class AlunoServiceTest {
 
     @Captor
     private ArgumentCaptor<Aluno> alunoCaptor;
+
+    @Captor
+    private ArgumentCaptor<Long> idAlunoCaptor;
 
     @BeforeEach
     void setUp() {
@@ -74,43 +73,9 @@ class AlunoServiceTest {
                 enderecoDto,
                 "",
                 "");
-    }
 
-    @Test
-    @DisplayName("Deve realizar o cadastro do aluno com sucesso")
-    void cadastrarAluno() {
+        this.aluno = new Aluno(1L, alunoDto);
 
-        given(enderecoService.criarEndereco(enderecoDto)).willReturn(endereco);
-        given(aluno.getId()).willReturn(10L);
-        given(aluno.getCpf()).willReturn(alunoDto.cpf());
-
-        alunoService.cadastrarAluno(alunoDto);
-
-        then(alunoRepository).should().save(alunoCaptor.capture());
-        Aluno alunoSalvo = alunoCaptor.getValue();
-
-        assertEquals(aluno.getCpf(), alunoSalvo.getCpf());
-    }
-
-    @Test
-    @DisplayName("Deveria não lançar a exceção e encontrar o aluno ")
-    void detalharDadosAlunoSucesso() {
-        given(alunoRepository.getReferenceById(1L)).willReturn(aluno);
-        given(aluno.getDataNascimento()).willReturn(LocalDate.now());
-        given(aluno.getDataCriacao()).willReturn(LocalDateTime.now());
-        assertDoesNotThrow(() -> alunoService.detalharDadosAluno(1L));
-    }
-
-    @Test
-    @DisplayName("Deveria  lançar a exceção ao não encontrar o aluno ")
-    void detalharDadosAlunoFalha() {
-        given(alunoRepository.getReferenceById(1L)).willReturn(null);
-        assertThrows(AlunoNotFoundException.class, () -> alunoService.detalharDadosAluno(1L));
-    }
-
-    @Test
-    @DisplayName("Deveria realizar a atualização do email do aluno")
-    void atualizarDadosAlunoSucesso() {
         this.atualizacaoAlunoDTO = new AtualizacaoAlunoDTO(
                 1L,
                 null,
@@ -122,37 +87,144 @@ class AlunoServiceTest {
                 null,
                 null
         );
-
-
-        given(alunoRepository.getReferenceById(1L)).willReturn(aluno);
-        given(aluno.getDataNascimento()).willReturn(LocalDate.now());
-        given(aluno.getDataCriacao()).willReturn(LocalDateTime.now());
-
-        alunoService.atualizarDadosAluno(atualizacaoAlunoDTO);
-
-        verify(aluno, times(1)).atualizarDadosAluno(atualizacaoAlunoDTO);
-        verify(alunoRepository, times(1)).save(aluno);
     }
 
-    @Test
-    @DisplayName("Deveria lançar exceção ao tentar atualizar aluno não existente")
-    void atualizarDadosAlunoFalhaCenario1() {
-        this.atualizacaoAlunoDTO = new AtualizacaoAlunoDTO(
-                1L,
-                null,
-                null,
-                "fulano.total@email.com",
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+    @Nested
+    class cadastrarAluno {
+        @Test
+        @DisplayName("Deveia realizar o cadastro do aluno com sucesso")
+        void DeveriaCadastrarAlunoComSucesso() {
 
-        given(alunoRepository.getReferenceById(1L)).willReturn(null);
-        given(aluno.getDataNascimento()).willReturn(LocalDate.now());
-        given(aluno.getDataCriacao()).willReturn(LocalDateTime.now());
+            doReturn(aluno).when(alunoRepository).save(alunoCaptor.capture());
+            var output = alunoService.cadastrarAluno(alunoDto);
 
-        assertThrows(AlunoNotFoundException.class, () -> alunoService.atualizarDadosAluno(atualizacaoAlunoDTO));
+            var alunoCaptured = alunoCaptor.getValue();
+
+            assertNotNull(output);
+            assertEquals(alunoDto.nome(), alunoCaptured.getNome());
+            assertEquals(alunoDto.sobrenome(), alunoCaptured.getSobrenome());
+            assertEquals(alunoDto.cpf(), alunoCaptured.getCpf());
+            assertEquals(alunoDto.dataNascimento(), alunoCaptured.getDataNascimento().toString());
+            assertEquals(alunoDto.email(), alunoCaptured.getEmail());
+
+            verify(alunoRepository, times(1)).save(alunoCaptured);
+        }
+
+        @Test
+        @DisplayName("Deveria retorar excecao quando um erro acontecer")
+        void DeveriaRetorarExcecaoQuandoAlgumErroAcontecer() {
+            doThrow(new RuntimeException()).when(alunoRepository).save(any());
+            assertThrows(RuntimeException.class, () -> alunoService.cadastrarAluno(alunoDto));
+        }
     }
+
+    @Nested
+    class detalharDadosAluno {
+        @Test
+        @DisplayName("Deveria retornar os dados do aluno com sucesso ")
+        void detalharDadosAlunoSucesso() {
+
+            doReturn(aluno).when(alunoRepository).getReferenceById(idAlunoCaptor.capture());
+            var output = alunoService.detalharDadosAluno(1L);
+            assertNotNull(output);
+            assertEquals(aluno.getId(), idAlunoCaptor.getValue());
+
+        }
+
+        @Test
+        @DisplayName("Deveria  lançar a exceção ao não encontrar o aluno ")
+        void detalharDadosAlunoFalha() {
+            doReturn(null).when(alunoRepository).getReferenceById(1L);
+            assertThrows(AlunoNotFoundException.class, () -> alunoService.detalharDadosAluno(1L));
+        }
+    }
+
+    @Nested
+    class listarAlunos {
+
+        @Test
+        @DisplayName("Deveria retornar todos os alunos caso sucesso")
+        void deveriaRetornarTodosAlunosCasoSucesso() {
+            Page<Aluno> pageAluno = new PageImpl<>(
+                    List.of(aluno),
+                    PageRequest.of(0,10, Sort.by("nome").ascending()),
+                    1);
+            doReturn(pageAluno).when(alunoRepository).findAll(any(Pageable.class));
+            var output = alunoService.listarTodosAlunos(0, 10);
+            assertNotNull(output);
+            assertEquals(1, output.alunos().size());
+            verify(alunoRepository, times(1)).findAll(any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("Deveria lancar excessao quando o alunos não encontrados")
+        void deveriaRetornarExcessaoQuandoAlunosNaoEncontrados() {
+            doReturn(null).when(alunoRepository).findAll(any(Pageable.class));
+            assertThrows(AlunoNotFoundException.class, () -> alunoService.listarTodosAlunos(0, 10));
+            verify(alunoRepository, times(1)).findAll(any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("Deveria retornar todos os alunos filtrados pelo nome caso sucesso")
+        void deveriaRetornarTodosAlunosFiltradosPeloNomeCasoSucesso() {
+            Pageable pageable = PageRequest.of(0,10, Sort.by("nome").ascending());
+            Page<Aluno> pageAluno = new PageImpl<>(
+                    List.of(aluno),
+                    pageable,
+                    1);
+            doReturn(pageAluno).when(alunoRepository).findByNomeIgnoreCaseContaining(aluno.getNome(), pageable);
+            var output = alunoService.listarAlunosPeloNome(aluno.getNome(), 0, 10);
+            assertNotNull(output);
+            assertEquals(1, output.alunos().size());
+            assertEquals(aluno.getNome(), output.alunos().get(0).nome());
+            verify(alunoRepository, times(1)).findByNomeIgnoreCaseContaining(aluno.getNome(), pageable);
+        }
+
+        @Test
+        @DisplayName("Deveria retornar todos os alunos filtrados pela marticula caso sucesso")
+        void deveriaRetornarTodosAlunosFiltradosPelaMatriculaCasoSucesso() {
+            Pageable pageable = PageRequest.of(0,10, Sort.by("nome").ascending());
+            Page<Aluno> pageAluno = new PageImpl<>(
+                    List.of(aluno),
+                    pageable,
+                    1);
+            doReturn(pageAluno).when(alunoRepository).findById(aluno.getId(), pageable);
+            var output = alunoService.listarAlunosPorMatricula(aluno.getId(), 0, 10);
+            assertNotNull(output);
+            assertEquals(1, output.alunos().size());
+            assertEquals(aluno.getNome(), output.alunos().get(0).nome());
+            verify(alunoRepository, times(1)).findById(aluno.getId(), pageable);
+        }
+    }
+
+    @Nested
+    class atualizarDadosAluno {
+        @Test
+        @DisplayName("Deveria realizar a atualização do email do aluno")
+        void atualizarDadosAlunoSucesso() {
+
+            doReturn(aluno).when(alunoRepository).getReferenceById(1L);
+            doReturn(aluno).when(alunoRepository).save(alunoCaptor.capture());
+
+            var output = alunoService.atualizarDadosAluno(atualizacaoAlunoDTO);
+            var alunoCaptured = alunoCaptor.getValue();
+
+            assertEquals(output.email(), alunoCaptured.getEmail());
+            verify(alunoRepository, times(1)).save(alunoCaptured);
+        }
+
+        @Test
+        @DisplayName("Deveria lançar exceção ao tentar atualizar aluno não existente")
+        void atualizarDadosAlunoFalhaCenario1() {
+            doReturn(null).when(alunoRepository).getReferenceById(1L);
+            assertThrows(AlunoNotFoundException.class, () -> alunoService.atualizarDadosAluno(atualizacaoAlunoDTO));
+            verify(alunoRepository, times(0)).save(any());
+        }
+    }
+
+
+
+
+
+
 }

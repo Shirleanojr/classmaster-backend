@@ -43,9 +43,13 @@ public class AlunoService {
     }
 
     public AlunoPageDTO listarTodosAlunos(@PositiveOrZero int page, @Positive @Max(10) int size){
-        Page<Aluno> pageAluno = repository.findAll(PageRequest.of(page, size, Sort.by("nome").ascending()));
-        List<AlunoBaseDTO> alunos = pageAluno.get().map(AlunoBaseDTO::new).collect(Collectors.toList());
-        return new AlunoPageDTO(alunos, pageAluno);
+        try {
+            Page<Aluno> pageAluno = repository.findAll(PageRequest.of(page, size, Sort.by("nome").ascending()));
+            List<AlunoBaseDTO> alunos = pageAluno.get().map(AlunoBaseDTO::new).collect(Collectors.toList());
+            return new AlunoPageDTO(alunos, pageAluno);
+        } catch (Exception ex) {
+            throw new AlunoNotFoundException(ex.getMessage());
+        }
     }
 
     public AlunoPageDTO listarAlunosPeloNome(String nome, @PositiveOrZero int page, @Positive @Max(10) int size) {

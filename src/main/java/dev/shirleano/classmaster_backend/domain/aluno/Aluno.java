@@ -51,6 +51,21 @@ public class Aluno {
         this.setEndereco(new Endereco(dados.endereco()));
     }
 
+    public Aluno(long idAluno, AlunoDto dados) {
+        this.setId(idAluno);
+        this.setNome(dados.nome());
+        this.setSobrenome(dados.sobrenome());
+        this.setCpf(dados.cpf());
+        this.setEmail(dados.email());
+        this.setTelefone(dados.telefone());
+        this.setTelefoneOutro(dados.telefoneOutro());
+        this.setDataNascimento(LocalDate.parse(dados.dataNascimento()));
+        this.setInstagram(dados.instagram());
+        this.setFacebook(dados.facebook());
+        this.setDataAtualizacao(this.dataCriacao);
+        this.setEndereco(new Endereco(dados.endereco()));
+    }
+
 
     public void atualizarDadosAluno(AtualizacaoAlunoDTO dados) {
         if (dados.nome() != null) {this.setNome(dados.nome());}

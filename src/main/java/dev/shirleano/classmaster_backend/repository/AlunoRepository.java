@@ -9,5 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AlunoRepository extends JpaRepository<Aluno, Long> {
 
     Page<Aluno> findByNomeIgnoreCaseContaining(String nome, Pageable pageable);
-    Page<Aluno> findById(Long mastricula, Pageable pageable);
+    Page<Aluno> findById(Long matricula, Pageable pageable);
 }
